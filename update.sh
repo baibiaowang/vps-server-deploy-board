@@ -7,7 +7,15 @@ REPO_RAW="${REPO_RAW:-https://raw.githubusercontent.com/baibiaowang/vps-server-d
 WORK_DIR="${WORK_DIR:-/tmp/vps-server-deploy-board-update-$$}"
 SERVICE_NAME="agu-board-v2"
 cleanup() { rm -rf "$WORK_DIR"; }
-trap cleanup EXIT
+restore_on_error() {
+  rc=$?
+  if [[ $rc -ne 0 ]] && command -v systemctl >/dev/null 2>&1; then
+    systemctl start "$SERVICE_NAME" >/dev/null 2>&1 || true
+  fi
+  cleanup
+  exit $rc
+}
+trap restore_on_error EXIT
 [[ "$(id -u)" -eq 0 ]] || { echo "错误：请使用 sudo/root 运行" >&2; exit 1; }
 [[ -d "$APP_DIR" ]] || { echo "错误：$APP_DIR 不存在，请先执行一键安装。" >&2; exit 1; }
 for cmd in curl tar sha256sum python3; do command -v "$cmd" >/dev/null 2>&1 || { echo "错误：缺少 $cmd" >&2; exit 1; }; done
