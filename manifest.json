@@ -1,0 +1,8 @@
+{
+  "version": "1.0.1",
+  "package_name": "vps-server-deploy-board-1.0.1.tar.gz",
+  "sha256": "f90ac7e8fc8c7bb6134a9be73bbcffe3b2871fcb35991b1186863d7c39eb2a03",
+  "size": 23101293,
+  "install_script": "install-from-github.sh",
+  "created": "2026-09-09"
+}
