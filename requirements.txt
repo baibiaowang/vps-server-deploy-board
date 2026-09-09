@@ -1,0 +1,10 @@
+# 核心依赖
+fastapi>=0.110,<1.0
+uvicorn[standard]>=0.27
+SQLAlchemy>=2.0,<3.0
+APScheduler>=3.10,<4.0
+PyYAML>=6.0
+brotli>=1.1
+tzdata>=2024.1
+
+# 数据库使用 SQLite（Python 标准库 sqlite3）
