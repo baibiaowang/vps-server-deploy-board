@@ -1,9 +1,12 @@
 [Unit]
 Description=A股公告看板 v2
-After=network.target
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=simple
+User=agu-board
+Group=agu-board
 WorkingDirectory=/opt/agu-board-v2
 ExecStart=/opt/agu-board-v2/.venv/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port 8766 --workers 1
 EnvironmentFile=/opt/agu-board-v2/agu-board.env
@@ -13,10 +16,15 @@ Environment=TZ=Asia/Shanghai
 Environment=BOARD_AUTH=1
 Environment=BOARD_HOST=0.0.0.0
 Environment=BOARD_PORT=8766
-Environment=MAX_RSS_MB=800
+Environment=MAX_RSS_MB=600
 Restart=on-failure
 RestartSec=5
 MemoryMax=800M
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/opt/agu-board-v2/data /opt/agu-board-v2/logs
 
 [Install]
 WantedBy=multi-user.target
