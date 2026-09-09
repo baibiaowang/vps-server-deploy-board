@@ -1,10 +1,10 @@
 # VPS 服务器部署看板
 
-这是独立于 `baibiaowang/agu-board` 的 VPS 部署项目。
+这是独立于 `baibiaowang/agu-board` 的 VPS 部署仓库。
 
 ## 目标
 
-在全新的 Linux/VPS 服务器上，用一条命令从 GitHub 获取完整部署包，自动安装 A 股公告看板、初始化历史数据、配置 systemd 并启动服务。
+把 A 股公告看板做成可重复部署的 VPS 安装包：新服务器执行一条命令，自动从 GitHub 下载已校验的发布包、安装依赖、导入历史数据库种子并启动服务。
 
 ## 一键部署
 
@@ -12,43 +12,19 @@
 bash <(curl -fsSL https://raw.githubusercontent.com/baibiaowang/vps-server-deploy-board/main/install-from-github.sh)
 ```
 
-提前设置登录密码：
+支持 root 和普通用户执行：root 直接运行；普通用户由脚本调用 sudo。
+
+也可以先设置密码：
 
 ```bash
-BOARD_PASSWORD='你的登录密码' bash <(curl -fsSL https://raw.githubusercontent.com/baibiaowang/vps-server-deploy-board/main/install-from-github.sh)
+BOARD_PASSWORD='你的强密码' bash <(curl -fsSL https://raw.githubusercontent.com/baibiaowang/vps-server-deploy-board/main/install-from-github.sh)
 ```
 
-脚本会从本仓库下载 `vps-server-deploy-board-1.0.0.tar.gz`，校验 SHA-256 后再解压安装。
+## 历史数据库
 
-## 数据策略
+发布包中的 `data/board.db` 是历史数据种子。第一次部署到全新 VPS 时，自动复制到 `/opt/agu-board-v2/data/board.db`。
 
-历史数据库属于重要的初始化数据，不是临时缓存。
-
-首次部署：
-
-```text
-GitHub 发布包
-  ↓
-解压完整程序 + 历史 board.db
-  ↓
-安装到 /opt/agu-board-v2
-  ↓
-首次创建 /opt/agu-board-v2/data/board.db
-```
-
-后续部署/更新：
-
-```text
-下载新程序包
-  ↓
-更新代码和依赖
-  ↓
-保留服务器现有 data/
-  ↓
-保留服务器现有 agu-board.env
-```
-
-因此服务器运行期间新增的历史公告数据不会被 GitHub 旧种子数据库覆盖。
+以后重新安装和更新都不会覆盖服务器已有数据库、日志或 `agu-board.env`。
 
 ## 更新
 
@@ -56,7 +32,9 @@ GitHub 发布包
 sudo /opt/agu-board-v2/update.sh
 ```
 
-更新前会先自动备份数据库和本地配置，然后下载经过 SHA-256 校验的发布包，再执行安全更新。
+更新过程：停止服务 → SQLite 一致性备份 → 下载最新发布包 → SHA-256 校验 → 只替换程序文件 → 执行数据库迁移 → 启动并检查服务。
+
+更新不依赖 `/opt/agu-board-v2/.git`。
 
 ## 备份
 
@@ -64,47 +42,23 @@ sudo /opt/agu-board-v2/update.sh
 sudo /opt/agu-board-v2/backup.sh
 ```
 
-默认备份到：
+默认备份到 `/opt/agu-board-backups/`。备份前会停止服务、执行 `wal_checkpoint(TRUNCATE)` 和 `integrity_check`，再复制数据库主文件。
 
-```text
-/opt/agu-board-backups/
-```
+## 安全
 
-## 安装后的主要位置
+生产环境强制开启 Cookie 登录；`data_list.js`、K 线、健康检查和静态资源接口均受登录态保护。FastAPI 文档默认关闭；服务使用专用系统用户 `agu-board`，并启用 systemd 权限限制。
 
-```text
-/opt/agu-board-v2/
-├── app/
-├── config/
-├── web/
-├── tools/
-├── data/
-│   └── board.db
-├── logs/
-├── .venv/
-├── agu-board.env
-├── install.sh
-├── update.sh
-└── backup.sh
-```
+## 并发
 
-## 与主项目的关系
+更新任务使用跨进程 `flock` 文件锁，手动任务、定时任务和直接 CLI 不能同时启动多个更新。K 线优先使用数据源的批量并发接口。
+
+## 发布机制
+
+仓库通过 `manifest.json` 指定当前发布包文件名与 SHA-256。应用代码与历史数据库随版本发布包统一更新，避免“入口脚本”和“压缩包内部脚本”漂移。
+
+## 仓库关系
 
 - `baibiaowang/agu-board`：主项目开发仓库。
-- `baibiaowang/vps-server-deploy-board`：独立的 VPS 初始化、发布包、历史数据种子、更新和备份项目。
+- `baibiaowang/vps-server-deploy-board`：VPS 初始化部署、历史数据种子、更新与备份工具。
 
-两个项目不互相覆盖。
-
-## 发布包
-
-当前版本：`1.0.0`
-
-发布包：`vps-server-deploy-board-1.0.0.tar.gz`
-
-SHA-256：
-
-```text
-46e527451fc351ab1c0670037c30fb3abe03f39515cf0a0b186da73427156679
-```
-
-后续升级版本时，只需替换版本号、发布包和 SHA-256；一键安装命令保持不变。
+二者独立维护。
