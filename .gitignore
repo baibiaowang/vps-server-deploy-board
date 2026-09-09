@@ -1,0 +1,25 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Secrets / local runtime
+agu-board.env
+.env
+logs/
+
+# Server runtime database must never be overwritten by code updates.
+data/board.db
+data/*.db-wal
+data/*.db-shm
+
+# Historical seed database is distributed compressed.
+# Keep data/board.db.gz tracked.
+
+data/market_cap_cache.json
+
+# Temporary / editor
+*.bak
+*.swp
+.DS_Store
