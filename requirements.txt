@@ -1,10 +1,21 @@
-# 核心依赖
+# 核心依赖（已在 Python 3.11 + FastAPI 0.141 + SQLAlchemy 2.0 下验证通过）
 fastapi>=0.110,<1.0
 uvicorn[standard]>=0.27
 SQLAlchemy>=2.0,<3.0
 APScheduler>=3.10,<4.0
 PyYAML>=6.0
+
+# 静态资源预压缩（brotli）。小带宽下比 gzip 再省 15~20%。
+# 装不上也能跑，只是没有 .br 那一档（自动回落到 gzip）。
 brotli>=1.1
+
+# 时区数据。官方 python:*-slim 镜像默认不带 tzdata，
+# 缺失时 app/timeutil.py 会回落到固定 UTC+8（结果正确但不精确），装上更稳妥。
 tzdata>=2024.1
 
-# 数据库使用 SQLite（Python 标准库 sqlite3）
+# 说明：
+#   - 数据库使用 SQLite（Python 标准库内置 sqlite3，无需额外安装）
+#   - 数据量增长到百万级后，建议换 PostgreSQL：
+#       pip install psycopg2-binary
+#       并修改 app/db.py 的 DB_URL 为 postgresql+psycopg2://user:pass@host/db
+#   - 如需全文检索加速，可启用 SQLite FTS5 虚拟表（当前用 LIKE + 索引已足够）
