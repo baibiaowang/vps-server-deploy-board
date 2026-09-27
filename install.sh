@@ -22,12 +22,18 @@ install_os_deps() {
 }
 for cmd in python3 rsync curl tar gzip sqlite3; do command -v "$cmd" >/dev/null 2>&1 || { install_os_deps; break; }; done
 python3 -m venv --help >/dev/null 2>&1 || install_os_deps
-python3 - <<'PY'
+PYTHON_BIN="python3"
+if [[ "$MODE" == "update" && -x "$APP_DIR/.venv/bin/python" ]]; then
+  PYTHON_BIN="$APP_DIR/.venv/bin/python"
+  echo "==> 更新模式：复用现有 .venv 的 $($PYTHON_BIN --version)"
+else
+  python3 - <<'PY'
 import sys
 if sys.version_info < (3, 11):
-    raise SystemExit("错误：本版本需要 Python 3.11+")
+    raise SystemExit("错误：首次安装需要 Python 3.11+；已有部署更新会复用现有 .venv。")
 print("==> Python", sys.version.split()[0])
 PY
+fi
 if ! id -u "$RUN_USER" >/dev/null 2>&1; then useradd --system --home-dir "$APP_DIR" --shell /usr/sbin/nologin "$RUN_USER"; fi
 PASSWORD="${BOARD_PASSWORD:-}"
 SECRET="${BOARD_SECRET:-}"
